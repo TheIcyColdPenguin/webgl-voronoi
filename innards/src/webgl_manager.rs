@@ -7,22 +7,16 @@ use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader, WebGlUniformLoc
 pub struct WebglManager {
     context: WebGl2RenderingContext,
 
-    canvas_width: f32,
-    canvas_height: f32,
-
     vert_count: i32,
 
     u_time_location: WebGlUniformLocation,
     u_resolution_location: WebGlUniformLocation,
+    u_points_location: WebGlUniformLocation,
 }
 
 #[wasm_bindgen]
 impl WebglManager {
-    pub fn new(
-        context: WebGl2RenderingContext,
-        canvas_width: f32,
-        canvas_height: f32,
-    ) -> Result<WebglManager, JsValue> {
+    pub fn new(context: WebGl2RenderingContext) -> Result<WebglManager, JsValue> {
         let vert_shader = Self::compile_shader(
             &context,
             WebGl2RenderingContext::VERTEX_SHADER,
@@ -74,31 +68,30 @@ impl WebglManager {
         let u_resolution_location = context
             .get_uniform_location(&program, "u_resolution")
             .ok_or("Couldn't get uniform location for u_resolution")?;
+        let u_points_location = context
+            .get_uniform_location(&program, "u_points")
+            .ok_or("Couldn't get uniform location for u_points")?;
 
         Ok(WebglManager {
             context,
-
-            canvas_width,
-            canvas_height,
 
             vert_count: vertices.len() as i32 / 2,
 
             u_time_location,
             u_resolution_location,
+            u_points_location,
         })
     }
 
-    pub fn draw_frame(&self, u_time: f32) {
+    pub fn draw_frame(&self, u_time: f32, width: f32, height: f32, u_points: &[f32]) {
         let context = &self.context;
 
         context.clear_color(0.0, 0.0, 0.0, 1.0);
         context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+
         context.uniform1f(Some(&self.u_time_location), u_time);
-        context.uniform2f(
-            Some(&self.u_resolution_location),
-            self.canvas_width,
-            self.canvas_height,
-        );
+        context.uniform2f(Some(&self.u_resolution_location), width, height);
+        context.uniform2fv_with_f32_array(Some(&self.u_points_location), u_points);
 
         context.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, self.vert_count);
     }
@@ -125,11 +118,6 @@ impl WebglManager {
                 .get_shader_info_log(&shader)
                 .unwrap_or_else(|| String::from("Unknown error creating shader")))
         }
-    }
-
-    pub fn resize(&mut self, width: f32, height: f32) {
-        self.canvas_width = width;
-        self.canvas_height = height;
     }
 
     fn link_program(

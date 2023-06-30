@@ -20,6 +20,6 @@ pub fn create_app(
     width: f32,
     height: f32,
 ) -> Result<App, JsValue> {
-    let manager = WebglManager::new(context, width, height)?;
-    Ok(App::new(manager))
+    let manager = WebglManager::new(context)?;
+    Ok(App::new(manager, width, height, 100))
 }

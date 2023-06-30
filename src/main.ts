@@ -19,7 +19,9 @@ init().then(() => {
     const app = create_app(context, canvas.width, canvas.height);
 
     requestAnimationFrame(function animate(time) {
-        app.draw(time / 1000);
+        let u_time = time / 1000;
+        app.draw(u_time);
+        app.update(u_time);
         requestAnimationFrame(animate);
     });
 });
